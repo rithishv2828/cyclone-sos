@@ -1,0 +1,5 @@
+{
+  "name": "Cyclone SOS",
+  "description": "Emergency assistance and survival guide for cyclone after-effects. Features SOS alerts, resource tracking, and AI-powered guidance.",
+  "requestFramePermissions": ["geolocation"]
+}

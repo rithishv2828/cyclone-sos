@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: hazards
+    // Fields:
+    //   - type: string (tree, power, flood, other)
+    //   - description: string (max 500 chars)
+    //   - location: map { lat: number, lng: number }
+    //   - timestamp: timestamp
+    //   - status: string (reported, verified, cleared)
+    //   - reporterUid: string (uid of the reporter)
+    //
+    // Collection: resources
+    // Fields:
+    //   - name: string
+    //   - type: string (shelter, medical, water, food)
+    //   - status: string (open, full, limited, emergency-only)
+    //   - address: string
+    //   - location: map { lat: number, lng: number }
+    //   - phone: string
+    //   - specialties: list of strings
+    //   - waitingTime: string
+    //
+    // Collection: users
+    // Fields:
+    //   - name: string
+    //   - email: string
+    //   - status: string (safe, help)
+    //   - role: string (user, admin)
+    //   - lastLocation: map { lat: number, lng: number }
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "rithishveerakumar14@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidHazard(data) {
+      return data.type in ['tree', 'power', 'flood', 'other'] &&
+             data.description is string && data.description.size() <= 500 &&
+             data.location is map && data.location.lat is number && data.location.lng is number &&
+             data.status in ['reported', 'verified', 'cleared'];
+    }
+
+    function isValidUser(data) {
+      return data.name is string && data.name.size() <= 100 &&
+             data.email is string &&
+             data.status in ['safe', 'help'] &&
+             data.role in ['user', 'admin'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /hazards/{hazardId} {
+      allow read: if true; // Publicly readable for emergency safety
+      allow create: if isAuthenticated() && isValidHazard(request.resource.data) && request.resource.data.reporterUid == request.auth.uid;
+      allow update: if isAdmin() || (isAuthenticated() && isValidHazard(request.resource.data) && resource.data.reporterUid == request.auth.uid && request.resource.data.reporterUid == resource.data.reporterUid);
+      allow delete: if isAdmin();
+    }
+
+    match /resources/{resourceId} {
+      allow read: if true; // Publicly readable for emergency safety
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == 'user';
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+      allow delete: if isAdmin();
+    }
+  }
+}

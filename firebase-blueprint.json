@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "Hazard": {
+      "title": "Hazard Report",
+      "description": "A report of a hazardous situation like a fallen tree or power outage.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["tree", "power", "flood", "other"] },
+        "description": { "type": "string" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          },
+          "required": ["lat", "lng"]
+        },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["reported", "verified", "cleared"] },
+        "reporterUid": { "type": "string" }
+      },
+      "required": ["type", "description", "location", "timestamp", "status"]
+    },
+    "Resource": {
+      "title": "Emergency Resource",
+      "description": "A facility providing emergency services like shelter or medical care.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["shelter", "medical", "water", "food"] },
+        "status": { "type": "string", "enum": ["open", "full", "limited", "emergency-only"] },
+        "address": { "type": "string" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          },
+          "required": ["lat", "lng"]
+        },
+        "phone": { "type": "string" },
+        "specialties": { "type": "array", "items": { "type": "string" } },
+        "waitingTime": { "type": "string" }
+      },
+      "required": ["name", "type", "status", "address", "location"]
+    },
+    "User": {
+      "title": "User Profile",
+      "description": "Information about a user and their safety status.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "status": { "type": "string", "enum": ["safe", "help"] },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "lastLocation": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        }
+      },
+      "required": ["name", "email", "status", "role"]
+    }
+  },
+  "firestore": {
+    "/hazards/{hazardId}": {
+      "schema": "Hazard",
+      "description": "Publicly reported hazards."
+    },
+    "/resources/{resourceId}": {
+      "schema": "Resource",
+      "description": "Emergency facilities and distribution points."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and safety status."
+    }
+  }
+}
